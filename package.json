@@ -1,0 +1,24 @@
+{
+  "name": "sabangnet-local",
+  "version": "1.0.0",
+  "description": "쿠팡 & 네이버 스마트스토어 상품 대량 등록 및 수정 로컬 프로그램",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client",
+    "server": "npm run start --prefix server",
+    "client": "npm run dev --prefix client",
+    "dev": "npx concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm run build --prefix client"
+  },
+  "keywords": [
+    "sabangnet",
+    "coupang",
+    "naver-smartstore",
+    "bulk-uploader"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

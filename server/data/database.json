@@ -1,0 +1,147 @@
+{
+  "products": [],
+  "settings": {
+    "coupangVendorId": "",
+    "coupangAccessKey": "",
+    "coupangSecretKey": "",
+    "naverClientId": "",
+    "naverClientSecret": "",
+    "naverStoreId": "",
+    "ssgApiKey": "",
+    "ssgPartnerId": "",
+    "lotteApiKey": "",
+    "lotteVendorNo": "",
+    "kakaoApiKey": "",
+    "simulationMode": true
+  },
+  "logs": [
+    {
+      "id": "log_9fxkxrwoumq6q6q19",
+      "timestamp": "2026-06-09T14:18:51.597Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_3h8dqaytnmq6q6je9",
+      "timestamp": "2026-06-09T14:18:42.993Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_ec9rs537smq6q56x2",
+      "timestamp": "2026-06-09T14:17:40.166Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_4u63omh8emq6q4f28",
+      "timestamp": "2026-06-09T14:17:04.064Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_xfosha55smq6q3xlb",
+      "timestamp": "2026-06-09T14:16:41.423Z",
+      "platform": "SYSTEM",
+      "type": "SUCCESS",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 2건 중 성공 2건, 실패 0건",
+      "details": ""
+    },
+    {
+      "id": "log_pjc17fydjmq6q3qgk",
+      "timestamp": "2026-06-09T14:16:32.180Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_ah2hx3co6mq6q2yt0",
+      "timestamp": "2026-06-09T14:15:56.340Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_1ttd7m9ufmq6q2mnq",
+      "timestamp": "2026-06-09T14:15:40.598Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_yb8wa8gsbmq6pxop2",
+      "timestamp": "2026-06-09T14:11:49.958Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_tvfr847b2mq6pxjxy",
+      "timestamp": "2026-06-09T14:11:43.798Z",
+      "platform": "SYSTEM",
+      "type": "SUCCESS",
+      "message": "대량 삭제 완료: 총 2개 중 2개 삭제",
+      "details": ""
+    },
+    {
+      "id": "log_c7o3zr5fymq6pxd9r",
+      "timestamp": "2026-06-09T14:11:35.151Z",
+      "platform": "SYSTEM",
+      "type": "SUCCESS",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 2건 중 성공 2건, 실패 0건",
+      "details": ""
+    },
+    {
+      "id": "log_te2p2p3oxmq6px3hs",
+      "timestamp": "2026-06-09T14:11:22.480Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 50건 중 성공 0건, 실패 50건",
+      "details": ""
+    },
+    {
+      "id": "log_j973z6bx8mq6pq2kn",
+      "timestamp": "2026-06-09T14:05:54.695Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 52건 중 성공 0건, 실패 52건",
+      "details": ""
+    },
+    {
+      "id": "log_2fy205ck8mq6po5p6",
+      "timestamp": "2026-06-09T14:04:25.434Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 52건 중 성공 0건, 실패 52건",
+      "details": ""
+    },
+    {
+      "id": "log_m3efu8w7nmq6p5tg5",
+      "timestamp": "2026-06-09T13:50:09.749Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 52건 중 성공 0건, 실패 52건",
+      "details": ""
+    },
+    {
+      "id": "log_i9uc0a8tqmq6ory2m",
+      "timestamp": "2026-06-09T13:39:22.558Z",
+      "platform": "SYSTEM",
+      "type": "ERROR",
+      "message": "엑셀 대량 업로드 처리 완료: 전체 52건 중 성공 0건, 실패 52건",
+      "details": ""
+    }
+  ]
+}
