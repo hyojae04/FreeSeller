@@ -24,8 +24,9 @@
 현재 코드 상태:
 
 - 실제 모드에서 인증 정보가 없으면 mock 등록으로 대체하지 않고 실패합니다.
-- live 등록 전 `coupangOutboundShippingPlaceCode`, `coupangReturnCenterCode`, `coupangNoticeCategoryName` 설정값을 요구합니다.
-- 현재 Settings UI에는 위 쿠팡 전용 배송/반품/고시정보 입력란이 아직 없으므로, production 등록 전에 설정 화면과 DB schema 확장이 필요합니다.
+- live 등록 전 쿠팡 택배사 코드, 출고지 코드, Wing 사용자 ID, 반품지, 반품 배송비, 고시정보, 상품 속성 JSON 배열을 요구합니다.
+- Settings UI에서 위 운영 필드를 저장할 수 있습니다.
+- `coupangNoticeDetailsJson`과 `coupangAttributesJson`은 쿠팡 Category meta data query API 또는 카테고리 엑셀 기준으로 카테고리별 값을 채워야 합니다.
 
 공식 문서:
 
@@ -46,7 +47,7 @@
 - 기존 연결 테스트의 테스트 상품 등록 호출을 제거했습니다.
 - 실제 모드에서 인증 정보가 없으면 mock 등록으로 대체하지 않고 실패합니다.
 - live 등록 전 대표 이미지 URL, 실제 카테고리 ID, 상세 설명, 배송 구분, 원산지, 고시정보 분류 등 최소 필수값을 검사합니다.
-- 현재 Settings UI에는 `naverNoticeCategoryType` 입력란이 아직 없으므로, production 등록 전에 카테고리별 고시정보 설정 화면과 payload mapping 확장이 필요합니다.
+- Settings UI에서 `naverNoticeCategoryType`을 저장할 수 있습니다.
 - 카테고리별 고시정보/속성 스펙은 네이버 커머스API 상세 스펙 기반으로 추가 매핑이 필요합니다.
 
 공식 문서:

@@ -17,9 +17,28 @@ function SettingsView({ settings: initialSettings, onSettingsSaved }) {
     coupangVendorId: '',
     coupangAccessKey: '',
     coupangSecretKey: '',
+    coupangDeliveryCompanyCode: '',
+    coupangOutboundShippingPlaceCode: '',
+    coupangVendorUserId: '',
+    coupangReturnCenterCode: '',
+    coupangReturnChargeName: '',
+    coupangCompanyContactNumber: '',
+    coupangReturnZipCode: '',
+    coupangReturnAddress: '',
+    coupangReturnAddressDetail: '',
+    coupangDeliveryChargeOnReturn: '',
+    coupangReturnCharge: '',
+    coupangRemoteAreaDeliverable: 'N',
+    coupangUnionDeliveryType: 'NOT_UNION_DELIVERY',
+    coupangOutboundShippingTimeDay: '1',
+    coupangNoticeCategoryName: '',
+    coupangNoticeDetailsJson: '',
+    coupangAttributesJson: '',
+    coupangRequested: false,
     naverClientId: '',
     naverClientSecret: '',
     naverStoreId: '',
+    naverNoticeCategoryType: '',
     ssgApiKey: '',
     ssgPartnerId: '',
     lotteApiKey: '',
@@ -205,6 +224,10 @@ function SettingsView({ settings: initialSettings, onSettingsSaved }) {
                 <button type="button" onClick={() => toggleKeyVisibility('nSecret')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>{showKeys.nSecret ? <EyeOff size={14} /> : <Eye size={14} />}</button>
               </div>
             </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>상품 고시정보 분류</label>
+              <input type="text" name="naverNoticeCategoryType" value={formData.naverNoticeCategoryType} onChange={handleChange} className="form-input" placeholder="예: ETC, WEAR, SHOES 등 카테고리별 값" />
+            </div>
             {testResults.naver.status !== 'idle' && (
               <div style={{ padding: '10px', borderRadius: '4px', fontSize: '0.78rem', background: testResults.naver.status === 'testing' ? 'rgba(99,102,241,0.1)' : testResults.naver.status === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${testResults.naver.status === 'testing' ? 'var(--color-primary)' : testResults.naver.status === 'success' ? 'var(--color-success)' : 'var(--color-error)'}`, color: testResults.naver.status === 'testing' ? '#fff' : testResults.naver.status === 'success' ? 'var(--color-success)' : 'var(--color-error)' }}>
                 {testResults.naver.message}
@@ -248,6 +271,96 @@ function SettingsView({ settings: initialSettings, onSettingsSaved }) {
                 <button type="button" onClick={() => toggleKeyVisibility('cSecret')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>{showKeys.cSecret ? <EyeOff size={14} /> : <Eye size={14} />}</button>
               </div>
             </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>택배사 코드</label>
+                <input type="text" name="coupangDeliveryCompanyCode" value={formData.coupangDeliveryCompanyCode} onChange={handleChange} className="form-input" placeholder="예: CJGLS" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>출고지 코드</label>
+                <input type="text" name="coupangOutboundShippingPlaceCode" value={formData.coupangOutboundShippingPlaceCode} onChange={handleChange} className="form-input" placeholder="숫자 코드" />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Wing 사용자 ID</label>
+                <input type="text" name="coupangVendorUserId" value={formData.coupangVendorUserId} onChange={handleChange} className="form-input" placeholder="쿠팡 Wing ID" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>출고 소요일</label>
+                <input type="number" min="1" name="coupangOutboundShippingTimeDay" value={formData.coupangOutboundShippingTimeDay} onChange={handleChange} className="form-input" placeholder="1" />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>도서산간 배송</label>
+                <select name="coupangRemoteAreaDeliverable" value={formData.coupangRemoteAreaDeliverable} onChange={handleChange} className="form-input">
+                  <option value="N">불가</option>
+                  <option value="Y">가능</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>묶음배송</label>
+                <select name="coupangUnionDeliveryType" value={formData.coupangUnionDeliveryType} onChange={handleChange} className="form-input">
+                  <option value="NOT_UNION_DELIVERY">불가</option>
+                  <option value="UNION_DELIVERY">가능</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>반품 센터 코드</label>
+                <input type="text" name="coupangReturnCenterCode" value={formData.coupangReturnCenterCode} onChange={handleChange} className="form-input" placeholder="반품지 센터 코드" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>반품지명</label>
+                <input type="text" name="coupangReturnChargeName" value={formData.coupangReturnChargeName} onChange={handleChange} className="form-input" placeholder="Wing 반품지명" />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>반품 연락처</label>
+                <input type="text" name="coupangCompanyContactNumber" value={formData.coupangCompanyContactNumber} onChange={handleChange} className="form-input" placeholder="010-0000-0000" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>반품 우편번호</label>
+                <input type="text" name="coupangReturnZipCode" value={formData.coupangReturnZipCode} onChange={handleChange} className="form-input" placeholder="우편번호" />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>반품 주소</label>
+              <input type="text" name="coupangReturnAddress" value={formData.coupangReturnAddress} onChange={handleChange} className="form-input" placeholder="기본 주소" />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>반품 상세 주소</label>
+              <input type="text" name="coupangReturnAddressDetail" value={formData.coupangReturnAddressDetail} onChange={handleChange} className="form-input" placeholder="상세 주소" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>초기 반품 배송비</label>
+                <input type="number" min="0" name="coupangDeliveryChargeOnReturn" value={formData.coupangDeliveryChargeOnReturn} onChange={handleChange} className="form-input" placeholder="0" />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>반품 배송비</label>
+                <input type="number" min="0" name="coupangReturnCharge" value={formData.coupangReturnCharge} onChange={handleChange} className="form-input" placeholder="0" />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>상품 고시정보 분류</label>
+              <input type="text" name="coupangNoticeCategoryName" value={formData.coupangNoticeCategoryName} onChange={handleChange} className="form-input" placeholder="예: 기타 재화" />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>고시정보 상세 JSON 배열</label>
+              <textarea name="coupangNoticeDetailsJson" value={formData.coupangNoticeDetailsJson} onChange={handleChange} className="form-input" style={{ minHeight: '74px', resize: 'vertical' }} placeholder='[{"noticeCategoryDetailName":"품명 및 모델명","content":"상품 상세 참조"}]' />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>상품 속성 JSON 배열</label>
+              <textarea name="coupangAttributesJson" value={formData.coupangAttributesJson} onChange={handleChange} className="form-input" style={{ minHeight: '74px', resize: 'vertical' }} placeholder='[{"attributeTypeName":"수량","attributeValueName":"1개"}]' />
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              <input type="checkbox" name="coupangRequested" checked={formData.coupangRequested} onChange={handleChange} />
+              등록 즉시 승인 요청
+            </label>
             {testResults.coupang.status !== 'idle' && (
               <div style={{ padding: '10px', borderRadius: '4px', fontSize: '0.78rem', background: testResults.coupang.status === 'testing' ? 'rgba(99,102,241,0.1)' : testResults.coupang.status === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${testResults.coupang.status === 'testing' ? 'var(--color-primary)' : testResults.coupang.status === 'success' ? 'var(--color-success)' : 'var(--color-error)'}`, color: testResults.coupang.status === 'testing' ? '#fff' : testResults.coupang.status === 'success' ? 'var(--color-success)' : 'var(--color-error)' }}>
                 {testResults.coupang.message}
@@ -420,7 +533,7 @@ function SettingsView({ settings: initialSettings, onSettingsSaved }) {
           <div>
             <h5 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>보안 주의사항</h5>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              본 프로그램은 로컬 호스트(PC) 내부의 파일 DB에 암호화 키를 안전히 기록합니다. 타 서버로 발급받으신 클라이언트 시크릿 및 서명키를 공유하지 않으니 안전하게 사용하셔도 무방합니다.
+              본 프로그램은 로컬 PC의 JSON 파일 DB에 API 키를 평문으로 저장합니다. 외부 서버로 전송하지는 않지만, 운영 전에는 파일 접근 권한과 백업 공유 범위를 반드시 확인해주세요.
             </p>
           </div>
         </div>

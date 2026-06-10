@@ -3,11 +3,13 @@ function isBlank(value) {
 }
 
 function isPositiveNumber(value) {
+  if (isBlank(value)) return false;
   const number = Number(value);
   return Number.isFinite(number) && number > 0;
 }
 
 function isNonNegativeNumber(value) {
+  if (isBlank(value)) return false;
   const number = Number(value);
   return Number.isFinite(number) && number >= 0;
 }
@@ -17,6 +19,16 @@ function isHttpUrl(value) {
   try {
     const parsed = new URL(String(value).trim());
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isNonEmptyJsonArray(value) {
+  if (isBlank(value)) return false;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) && parsed.length > 0;
   } catch {
     return false;
   }
@@ -53,9 +65,19 @@ function validateCoupangLiveProduct(product, settings) {
 
   if (isBlank(product.brandName || product.brand)) errors.push('브랜드명');
   if (isBlank(product.modelName)) errors.push('모델명');
+  if (isBlank(settings.coupangDeliveryCompanyCode)) errors.push('쿠팡 택배사 코드');
   if (isBlank(settings.coupangOutboundShippingPlaceCode)) errors.push('쿠팡 출고지 코드');
+  if (isBlank(settings.coupangVendorUserId)) errors.push('쿠팡 Wing 사용자 ID');
   if (isBlank(settings.coupangReturnCenterCode)) errors.push('쿠팡 반품지 센터 코드');
+  if (isBlank(settings.coupangReturnChargeName)) errors.push('쿠팡 반품지명');
+  if (isBlank(settings.coupangCompanyContactNumber)) errors.push('쿠팡 반품지 연락처');
+  if (isBlank(settings.coupangReturnZipCode)) errors.push('쿠팡 반품지 우편번호');
+  if (isBlank(settings.coupangReturnAddress)) errors.push('쿠팡 반품지 주소');
+  if (!isNonNegativeNumber(settings.coupangDeliveryChargeOnReturn)) errors.push('쿠팡 초기 반품 배송비');
+  if (!isNonNegativeNumber(settings.coupangReturnCharge)) errors.push('쿠팡 반품 배송비');
   if (isBlank(settings.coupangNoticeCategoryName)) errors.push('쿠팡 상품 고시정보 분류');
+  if (!isNonEmptyJsonArray(settings.coupangNoticeDetailsJson)) errors.push('쿠팡 고시정보 상세 JSON 배열');
+  if (!isNonEmptyJsonArray(settings.coupangAttributesJson)) errors.push('쿠팡 속성 JSON 배열');
 
   return errors;
 }

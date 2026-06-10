@@ -125,7 +125,12 @@
 {
   "simulationMode": true,
   "naverClientId": "",
-  "naverClientSecret": ""
+  "naverClientSecret": "",
+  "naverNoticeCategoryType": "",
+  "coupangDeliveryCompanyCode": "",
+  "coupangOutboundShippingPlaceCode": "",
+  "coupangNoticeDetailsJson": "[{\"noticeCategoryDetailName\":\"품명 및 모델명\",\"content\":\"상품 상세 참조\"}]",
+  "coupangAttributesJson": "[{\"attributeTypeName\":\"수량\",\"attributeValueName\":\"1개\"}]"
 }
 ```
 

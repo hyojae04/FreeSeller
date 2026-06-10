@@ -109,9 +109,28 @@ id = `${mallCode}_${productCode}`
   "coupangVendorId": "",
   "coupangAccessKey": "",
   "coupangSecretKey": "",
+  "coupangDeliveryCompanyCode": "",
+  "coupangOutboundShippingPlaceCode": "",
+  "coupangVendorUserId": "",
+  "coupangReturnCenterCode": "",
+  "coupangReturnChargeName": "",
+  "coupangCompanyContactNumber": "",
+  "coupangReturnZipCode": "",
+  "coupangReturnAddress": "",
+  "coupangReturnAddressDetail": "",
+  "coupangDeliveryChargeOnReturn": "",
+  "coupangReturnCharge": "",
+  "coupangRemoteAreaDeliverable": "N",
+  "coupangUnionDeliveryType": "NOT_UNION_DELIVERY",
+  "coupangOutboundShippingTimeDay": "1",
+  "coupangNoticeCategoryName": "",
+  "coupangNoticeDetailsJson": "",
+  "coupangAttributesJson": "",
+  "coupangRequested": false,
   "naverClientId": "",
   "naverClientSecret": "",
   "naverStoreId": "",
+  "naverNoticeCategoryType": "",
   "ssgApiKey": "",
   "ssgPartnerId": "",
   "lotteApiKey": "",
@@ -139,4 +158,3 @@ id = `${mallCode}_${productCode}`
 - `db.addLog`는 새 로그를 배열 앞에 `unshift`합니다.
 - 최대 500개만 유지합니다.
 - `details`가 object이면 JSON string으로 저장합니다.
-

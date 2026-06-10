@@ -35,6 +35,25 @@ function formatCoupangDate(date) {
   return date.toISOString().substring(0, 19);
 }
 
+function parseJsonArray(value, fallback = []) {
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function getDeliveryChargeType(shippingType) {
+  if (shippingType === 'FREE') return 'FREE';
+  if (shippingType === 'CONDITIONAL_FREE') return 'CONDITIONAL_FREE';
+  return 'NOT_FREE';
+}
+
+function getDeliveryCharge(product) {
+  return product.shippingType === 'FREE' ? 0 : Number(product.shippingFee) || 0;
+}
+
 async function testConnection(settings) {
   const { coupangVendorId, coupangAccessKey, coupangSecretKey } = settings;
 
@@ -113,6 +132,11 @@ async function registerProduct(product, settings, logCallback = () => {}) {
     // 상품 옵션 가공
     const items = [];
     const options = product.optionValue ? product.optionValue.split(',') : ['기본옵션'];
+    const notices = parseJsonArray(settings.coupangNoticeDetailsJson).map(notice => ({
+      noticeCategoryName: settings.coupangNoticeCategoryName,
+      ...notice
+    }));
+    const attributes = parseJsonArray(settings.coupangAttributesJson);
     
     options.forEach((opt, idx) => {
       items.push({
@@ -120,7 +144,19 @@ async function registerProduct(product, settings, logCallback = () => {}) {
         originalPrice: product.price,
         salePrice: product.price,
         maximumBuyCount: 999,
-        headCount: 0,
+        maximumBuyForPerson: 0,
+        maximumBuyForPersonPeriod: 1,
+        outboundShippingTimeDay: Number(settings.coupangOutboundShippingTimeDay) || 1,
+        unitCount: 1,
+        adultOnly: 'EVERYONE',
+        taxType: 'TAX',
+        parallelImported: 'NOT_PARALLEL_IMPORTED',
+        overseasPurchased: 'NOT_OVERSEAS_PURCHASED',
+        pccNeeded: false,
+        externalVendorSku: product.sellerProductCode || product.id,
+        emptyBarcode: true,
+        emptyBarcodeReason: '상품 바코드 없음',
+        modelNo: product.modelName,
         images: [
           {
             imageOrder: 0,
@@ -128,8 +164,19 @@ async function registerProduct(product, settings, logCallback = () => {}) {
             vendorPath: product.image
           }
         ],
-        attributes: [],
-        contents: [],
+        notices,
+        attributes,
+        contents: [
+          {
+            contentsType: 'TEXT',
+            contentDetails: [
+              {
+                content: product.description,
+                detailType: 'TEXT'
+              }
+            ]
+          }
+        ],
         offers: []
       });
     });
@@ -138,16 +185,30 @@ async function registerProduct(product, settings, logCallback = () => {}) {
       displayCategoryCode: Number(product.category),
       sellerProductName: product.name,
       vendorId: coupangVendorId,
-      saleStartedAt: new Date().toISOString().substring(0, 19).replace('T', ' '),
-      saleEndedAt: '2099-12-31 23:59:59',
+      saleStartedAt: formatCoupangDate(new Date()),
+      saleEndedAt: '2099-12-31T23:59:59',
       brand: product.brandName || product.brand,
+      generalProductName: product.modelName,
       generalDescription: product.description,
-      items: items,
-      deliveryProperties: {
-        deliveryMethod: 'SEQUENTIAL',
-        deliveryFeeType: product.shippingType === 'FREE' ? 'FREE' : 'PAID',
-        deliveryFee: product.shippingType === 'FREE' ? 0 : (product.shippingFee || 3000)
-      }
+      deliveryMethod: 'SEQUENCIAL',
+      deliveryCompanyCode: settings.coupangDeliveryCompanyCode,
+      deliveryChargeType: getDeliveryChargeType(product.shippingType),
+      deliveryCharge: getDeliveryCharge(product),
+      freeShipOverAmount: Number(settings.coupangFreeShipOverAmount) || 0,
+      deliveryChargeOnReturn: Number(settings.coupangDeliveryChargeOnReturn),
+      remoteAreaDeliverable: settings.coupangRemoteAreaDeliverable || 'N',
+      unionDeliveryType: settings.coupangUnionDeliveryType || 'NOT_UNION_DELIVERY',
+      returnCenterCode: settings.coupangReturnCenterCode,
+      returnChargeName: settings.coupangReturnChargeName,
+      companyContactNumber: settings.coupangCompanyContactNumber,
+      returnZipCode: settings.coupangReturnZipCode,
+      returnAddress: settings.coupangReturnAddress,
+      returnAddressDetail: settings.coupangReturnAddressDetail,
+      returnCharge: Number(settings.coupangReturnCharge),
+      outboundShippingPlaceCode: Number(settings.coupangOutboundShippingPlaceCode),
+      vendorUserId: settings.coupangVendorUserId,
+      requested: Boolean(settings.coupangRequested),
+      items
     };
 
     const headers = generateCoupangHeaders('POST', path, '', coupangAccessKey, coupangSecretKey);
