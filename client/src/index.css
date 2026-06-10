@@ -10,6 +10,8 @@
   --card-bg: rgba(18, 24, 36, 0.75);
   --card-border: rgba(255, 255, 255, 0.08);
   --card-hover-border: rgba(99, 102, 241, 0.35);
+  --surface-subtle: rgba(255, 255, 255, 0.02);
+  --input-bg: rgba(10, 14, 23, 0.6);
   
   --text-main: #f3f4f6;
   --text-muted: #9ca3af;
@@ -28,10 +30,13 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
+  --focus-ring: rgba(79, 70, 229, 0.2);
   
   /* Dimensions & Shadows */
   --sidebar-width: 260px;
   --header-height: 70px;
+  --scrollbar-size: 8px;
+  --table-cell-padding: 16px;
   --border-radius-sm: 8px;
   --border-radius-md: 12px;
   --border-radius-lg: 18px;
@@ -40,6 +45,11 @@
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.25);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.4);
   --glow-primary: 0 0 15px var(--color-primary-glow);
+  --transition-fast: 0.2s;
+  --transition-panel: 0.3s ease;
+  --font-mono: 'Courier New', Courier, monospace;
+  --console-bg: #050811;
+  --console-border: #1e293b;
 }
 
 * {
@@ -59,8 +69,8 @@ body {
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
 
 ::-webkit-scrollbar-track {
@@ -84,7 +94,7 @@ body {
   border: 1px solid var(--card-border);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-md);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color var(--transition-panel), box-shadow var(--transition-panel);
 }
 
 .glass-panel:hover {
@@ -92,8 +102,18 @@ body {
 }
 
 /* Typography & Layout */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4,
+.stat-value {
   font-family: var(--font-display);
+}
+
+h1,
+h2,
+h3,
+h4 {
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -103,7 +123,10 @@ a {
   text-decoration: none;
 }
 
-button, input, select, textarea {
+button,
+input,
+select,
+textarea {
   font-family: inherit;
   color: inherit;
 }
@@ -136,13 +159,20 @@ button, input, select, textarea {
   background: var(--color-primary);
 }
 
-.stat-card.naver::after { background: var(--color-naver); }
-.stat-card.coupang::after { background: var(--color-coupang); }
-.stat-card.error::after { background: var(--color-error); }
+.stat-card.naver::after {
+  background: var(--color-naver);
+}
+
+.stat-card.coupang::after {
+  background: var(--color-coupang);
+}
+
+.stat-card.error::after {
+  background: var(--color-error);
+}
 
 .stat-value {
   font-size: 2.25rem;
-  font-family: var(--font-display);
   font-weight: 700;
   line-height: 1;
   margin-top: 8px;
@@ -157,7 +187,7 @@ button, input, select, textarea {
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -176,17 +206,17 @@ button, input, select, textarea {
 /* Form Controls */
 .form-input {
   width: 100%;
-  background: rgba(10, 14, 23, 0.6);
+  background: var(--input-bg);
   border: 1px solid var(--card-border);
   padding: 12px 16px;
   border-radius: var(--border-radius-sm);
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .form-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 /* Tables */
@@ -205,7 +235,7 @@ button, input, select, textarea {
 
 .custom-table th {
   background: var(--bg-tertiary);
-  padding: 16px;
+  padding: var(--table-cell-padding);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -213,13 +243,13 @@ button, input, select, textarea {
 }
 
 .custom-table td {
-  padding: 16px;
+  padding: var(--table-cell-padding);
   border-bottom: 1px solid var(--card-border);
   font-size: 0.95rem;
 }
 
 .custom-table tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--surface-subtle);
 }
 
 /* Progress bar animation */
@@ -238,9 +268,9 @@ button, input, select, textarea {
 
 /* Floating log console styling */
 .console-container {
-  background: #050811;
-  border: 1px solid #1e293b;
-  font-family: 'Courier New', Courier, monospace;
+  background: var(--console-bg);
+  border: 1px solid var(--console-border);
+  font-family: var(--font-mono);
   border-radius: var(--border-radius-sm);
   padding: 16px;
   max-height: 300px;
