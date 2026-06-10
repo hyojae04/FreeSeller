@@ -67,7 +67,7 @@ npm run install-all
 ```
 
 ### 2. Run the Development Server
-Launch both the backend API server (Port 5000) and the Vite frontend (Port 3000) concurrently:
+Launch both the backend API server (Port 5001) and the Vite frontend (Port 3000) concurrently:
 ```bash
 npm run dev
 ```

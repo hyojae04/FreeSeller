@@ -59,8 +59,24 @@ function BulkManager({ onImportSuccess }) {
   };
 
   // 템플릿 다운로드 트리거
-  const downloadTemplate = () => {
-    window.open('/api/excel/template', '_blank');
+  const downloadTemplate = async () => {
+    try {
+      const res = await fetch('/api/excel/template');
+      if (!res.ok) {
+        throw new Error('템플릿 생성 중 오류가 발생했습니다.');
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'product_bulk_template.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   // 파일 업로드 수행
@@ -80,14 +96,28 @@ function BulkManager({ onImportSuccess }) {
         body: formData
       });
 
+      const contentType = res.headers.get('content-type') || '';
+
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || '엑셀 업로드 중 오류가 발생했습니다.');
+        let errMsg = '엑셀 업로드 중 오류가 발생했습니다.';
+        if (contentType.includes('application/json')) {
+          const errData = await res.json();
+          errMsg = errData.error || errMsg;
+        } else {
+          const textData = await res.text();
+          errMsg = textData || `서버 에러가 발생했습니다. (상태 코드: ${res.status})`;
+        }
+        throw new Error(errMsg);
       }
 
-      const data = await res.json();
-      setReport(data);
-      setSelectedFile(null); // 초기화
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        setReport(data);
+        setSelectedFile(null); // 초기화
+      } else {
+        const textData = await res.text();
+        throw new Error(`올바르지 않은 응답 형식입니다: ${textData.substring(0, 100)}`);
+      }
     } catch (err) {
       setErrorMsg(err.message);
     } finally {

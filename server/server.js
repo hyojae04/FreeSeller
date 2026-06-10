@@ -13,7 +13,7 @@ const lotte = require('./api-clients/lotte');
 const kakao = require('./api-clients/kakao');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // CORS 설정 - 모든 로컬 개발 주소 허용
 app.use(cors());
