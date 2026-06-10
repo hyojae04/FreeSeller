@@ -15,6 +15,54 @@ const kakao = require('./api-clients/kakao');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+const SYNC_PLATFORMS = {
+  coupang: {
+    label: 'COUPANG',
+    destinationName: '쿠팡에',
+    client: coupang,
+    statusField: 'statusCoupang',
+    idField: 'statusCoupangId',
+    errorField: 'errorCoupang',
+    lastSyncField: 'lastSyncCoupang'
+  },
+  naver: {
+    label: 'NAVER',
+    destinationName: '네이버 스마트스토어에',
+    client: naver,
+    statusField: 'statusNaver',
+    idField: 'statusNaverId',
+    errorField: 'errorNaver',
+    lastSyncField: 'lastSyncNaver'
+  },
+  ssg: {
+    label: 'SSG',
+    destinationName: 'SSG에',
+    client: ssg,
+    statusField: 'statusSsg',
+    idField: 'statusSsgId',
+    errorField: 'errorSsg',
+    lastSyncField: 'lastSyncSsg'
+  },
+  lotte: {
+    label: 'LOTTE',
+    destinationName: '롯데온에',
+    client: lotte,
+    statusField: 'statusLotte',
+    idField: 'statusLotteId',
+    errorField: 'errorLotte',
+    lastSyncField: 'lastSyncLotte'
+  },
+  kakao: {
+    label: 'KAKAO',
+    destinationName: '카카오 톡스토어에',
+    client: kakao,
+    statusField: 'statusKakao',
+    idField: 'statusKakaoId',
+    errorField: 'errorKakao',
+    lastSyncField: 'lastSyncKakao'
+  }
+};
+
 // CORS 설정 - 모든 로컬 개발 주소 허용
 app.use(cors());
 app.use(express.json());
@@ -25,6 +73,69 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 const upload = multer({ dest: uploadDir });
+
+function sendSyncHeaders(res) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+}
+
+async function syncProductToPlatform(productId, product, platform, settings, percent, sendEvent) {
+  const config = SYNC_PLATFORMS[platform];
+  if (!config) return;
+
+  const isRegistered = product[config.statusField] === 'SUCCESS' && product[config.idField];
+  const handler = isRegistered ? config.client.updateProduct : config.client.registerProduct;
+
+  sendEvent('status', {
+    productId,
+    platform: config.label,
+    message: `${config.destinationName} 상품 ${isRegistered ? '수정' : '등록'} 요청 중...`,
+    percent
+  });
+
+  try {
+    const result = await handler(product, settings, (msg, type = 'INFO') => {
+      sendEvent('console', { platform: config.label, type, message: msg });
+    });
+
+    if (result.success) {
+      const updates = {
+        [config.statusField]: 'SUCCESS',
+        [config.errorField]: '',
+        [config.lastSyncField]: new Date().toISOString()
+      };
+      if (result.productId) updates[config.idField] = result.productId;
+      db.updateProduct(productId, updates);
+      sendEvent('product_success', {
+        productId,
+        platform: config.label,
+        productIdOut: result.productId || product[config.idField]
+      });
+      return;
+    }
+
+    db.updateProduct(productId, {
+      [config.statusField]: 'ERROR',
+      [config.errorField]: result.error,
+      [config.lastSyncField]: new Date().toISOString()
+    });
+    sendEvent('product_error', { productId, platform: config.label, error: result.error });
+  } catch (err) {
+    sendEvent('console', {
+      platform: config.label,
+      type: 'ERROR',
+      message: `동기화 처리 오류: ${err.message}`
+    });
+    db.updateProduct(productId, {
+      [config.statusField]: 'ERROR',
+      [config.errorField]: err.message
+    });
+    sendEvent('product_error', { productId, platform: config.label, error: err.message });
+  }
+}
 
 // --- API 라우팅 ---
 
@@ -196,11 +307,7 @@ app.get('/api/sync/stream', async (req, res) => {
   const ids = (req.query.ids || '').split(',').filter(Boolean);
   const platforms = (req.query.platforms || '').split(',').filter(Boolean);
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.flushHeaders();
+  sendSyncHeaders(res);
 
   const sendEvent = (event, data) => {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -233,191 +340,7 @@ app.get('/api/sync/stream', async (req, res) => {
     for (const platform of platforms) {
       currentStep++;
       const percent = Math.round((currentStep / totalSteps) * 100);
-
-      try {
-        if (platform === 'coupang') {
-          const isRegistered = product.statusCoupang === 'SUCCESS' && product.statusCoupangId;
-          const handler = isRegistered ? coupang.updateProduct : coupang.registerProduct;
-          
-          sendEvent('status', {
-            productId,
-            platform: 'COUPANG',
-            message: `쿠팡에 상품 ${isRegistered ? '수정' : '등록'} 요청 중...`,
-            percent
-          });
-
-          const result = await handler(product, settings, (msg, type = 'INFO') => {
-            sendEvent('console', { platform: 'COUPANG', type, message: msg });
-          });
-
-          if (result.success) {
-            const updates = {
-              statusCoupang: 'SUCCESS',
-              errorCoupang: '',
-              lastSyncCoupang: new Date().toISOString()
-            };
-            if (result.productId) updates.statusCoupangId = result.productId;
-            db.updateProduct(productId, updates);
-            sendEvent('product_success', { productId, platform: 'COUPANG', productIdOut: result.productId || product.statusCoupangId });
-          } else {
-            db.updateProduct(productId, {
-              statusCoupang: 'ERROR',
-              errorCoupang: result.error,
-              lastSyncCoupang: new Date().toISOString()
-            });
-            sendEvent('product_error', { productId, platform: 'COUPANG', error: result.error });
-          }
-        } else if (platform === 'naver') {
-          const isRegistered = product.statusNaver === 'SUCCESS' && product.statusNaverId;
-          const handler = isRegistered ? naver.updateProduct : naver.registerProduct;
-
-          sendEvent('status', {
-            productId,
-            platform: 'NAVER',
-            message: `네이버 스마트스토어에 상품 ${isRegistered ? '수정' : '등록'} 요청 중...`,
-            percent
-          });
-
-          const result = await handler(product, settings, (msg, type = 'INFO') => {
-            sendEvent('console', { platform: 'NAVER', type, message: msg });
-          });
-
-          if (result.success) {
-            const updates = {
-              statusNaver: 'SUCCESS',
-              errorNaver: '',
-              lastSyncNaver: new Date().toISOString()
-            };
-            if (result.productId) updates.statusNaverId = result.productId;
-            db.updateProduct(productId, updates);
-            sendEvent('product_success', { productId, platform: 'NAVER', productIdOut: result.productId || product.statusNaverId });
-          } else {
-            db.updateProduct(productId, {
-              statusNaver: 'ERROR',
-              errorNaver: result.error,
-              lastSyncNaver: new Date().toISOString()
-            });
-            sendEvent('product_error', { productId, platform: 'NAVER', error: result.error });
-          }
-        } else if (platform === 'ssg') {
-          const isRegistered = product.statusSsg === 'SUCCESS' && product.statusSsgId;
-          const handler = isRegistered ? ssg.updateProduct : ssg.registerProduct;
-
-          sendEvent('status', {
-            productId,
-            platform: 'SSG',
-            message: `SSG에 상품 ${isRegistered ? '수정' : '등록'} 요청 중...`,
-            percent
-          });
-
-          const result = await handler(product, settings, (msg, type = 'INFO') => {
-            sendEvent('console', { platform: 'SSG', type, message: msg });
-          });
-
-          if (result.success) {
-            const updates = {
-              statusSsg: 'SUCCESS',
-              errorSsg: '',
-              lastSyncSsg: new Date().toISOString()
-            };
-            if (result.productId) updates.statusSsgId = result.productId;
-            db.updateProduct(productId, updates);
-            sendEvent('product_success', { productId, platform: 'SSG', productIdOut: result.productId || product.statusSsgId });
-          } else {
-            db.updateProduct(productId, {
-              statusSsg: 'ERROR',
-              errorSsg: result.error,
-              lastSyncSsg: new Date().toISOString()
-            });
-            sendEvent('product_error', { productId, platform: 'SSG', error: result.error });
-          }
-        } else if (platform === 'lotte') {
-          const isRegistered = product.statusLotte === 'SUCCESS' && product.statusLotteId;
-          const handler = isRegistered ? lotte.updateProduct : lotte.registerProduct;
-
-          sendEvent('status', {
-            productId,
-            platform: 'LOTTE',
-            message: `롯데온에 상품 ${isRegistered ? '수정' : '등록'} 요청 중...`,
-            percent
-          });
-
-          const result = await handler(product, settings, (msg, type = 'INFO') => {
-            sendEvent('console', { platform: 'LOTTE', type, message: msg });
-          });
-
-          if (result.success) {
-            const updates = {
-              statusLotte: 'SUCCESS',
-              errorLotte: '',
-              lastSyncLotte: new Date().toISOString()
-            };
-            if (result.productId) updates.statusLotteId = result.productId;
-            db.updateProduct(productId, updates);
-            sendEvent('product_success', { productId, platform: 'LOTTE', productIdOut: result.productId || product.statusLotteId });
-          } else {
-            db.updateProduct(productId, {
-              statusLotte: 'ERROR',
-              errorLotte: result.error,
-              lastSyncLotte: new Date().toISOString()
-            });
-            sendEvent('product_error', { productId, platform: 'LOTTE', error: result.error });
-          }
-        } else if (platform === 'kakao') {
-          const isRegistered = product.statusKakao === 'SUCCESS' && product.statusKakaoId;
-          const handler = isRegistered ? kakao.updateProduct : kakao.registerProduct;
-
-          sendEvent('status', {
-            productId,
-            platform: 'KAKAO',
-            message: `카카오 톡스토어에 상품 ${isRegistered ? '수정' : '등록'} 요청 중...`,
-            percent
-          });
-
-          const result = await handler(product, settings, (msg, type = 'INFO') => {
-            sendEvent('console', { platform: 'KAKAO', type, message: msg });
-          });
-
-          if (result.success) {
-            const updates = {
-              statusKakao: 'SUCCESS',
-              errorKakao: '',
-              lastSyncKakao: new Date().toISOString()
-            };
-            if (result.productId) updates.statusKakaoId = result.productId;
-            db.updateProduct(productId, updates);
-            sendEvent('product_success', { productId, platform: 'KAKAO', productIdOut: result.productId || product.statusKakaoId });
-          } else {
-            db.updateProduct(productId, {
-              statusKakao: 'ERROR',
-              errorKakao: result.error,
-              lastSyncKakao: new Date().toISOString()
-            });
-            sendEvent('product_error', { productId, platform: 'KAKAO', error: result.error });
-          }
-        }
-      } catch (err) {
-        sendEvent('console', { platform: platform.toUpperCase(), type: 'ERROR', message: `동기화 처리 오류: ${err.message}` });
-        const updates = {};
-        if (platform === 'coupang') {
-          updates.statusCoupang = 'ERROR';
-          updates.errorCoupang = err.message;
-        } else if (platform === 'naver') {
-          updates.statusNaver = 'ERROR';
-          updates.errorNaver = err.message;
-        } else if (platform === 'ssg') {
-          updates.statusSsg = 'ERROR';
-          updates.errorSsg = err.message;
-        } else if (platform === 'lotte') {
-          updates.statusLotte = 'ERROR';
-          updates.errorLotte = err.message;
-        } else if (platform === 'kakao') {
-          updates.statusKakao = 'ERROR';
-          updates.errorKakao = err.message;
-        }
-        db.updateProduct(productId, updates);
-        sendEvent('product_error', { productId, platform: platform.toUpperCase(), error: err.message });
-      }
+      await syncProductToPlatform(productId, product, platform, settings, percent, sendEvent);
     }
   }
 

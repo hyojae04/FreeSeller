@@ -85,6 +85,109 @@ const HEADER_MAP = {
   'productcertseq': 'productCertSeq'
 };
 
+const REQUIRED_FIELDS = [
+  { key: 'productCode', label: '품번코드' },
+  { key: 'mallCode', label: '쇼핑몰코드' },
+  { key: 'mallName', label: '쇼핑몰명' },
+  { key: 'mallPrice', label: '쇼핑몰 판매가' },
+  { key: 'sellerProductCode', label: '자체상품코드' },
+  { key: 'name', label: '상품명' },
+  { key: 'price', label: '판매가' },
+  { key: 'cost', label: '원가' },
+  { key: 'cost2', label: '원가2' },
+  { key: 'brandName', label: '브랜드명' },
+  { key: 'modelName', label: '모델명' }
+];
+
+const NUMERIC_FIELDS = [
+  'price',
+  'cost',
+  'cost2',
+  'mallPrice',
+  'mallCost',
+  'stockSplitPercent',
+  'productCertSeq'
+];
+
+function createUploadReport(total) {
+  return {
+    total,
+    success: 0,
+    failures: 0,
+    errors: [],
+    inserted: []
+  };
+}
+
+function getMappedHeader(originalKey) {
+  const cleanKey = originalKey.replace(/\s+/g, '').toLowerCase();
+  return HEADER_MAP[cleanKey] || HEADER_MAP[originalKey];
+}
+
+function mapRowToProductData(row) {
+  const productData = {};
+
+  Object.keys(row).forEach(originalKey => {
+    const mappedKey = getMappedHeader(originalKey);
+    if (mappedKey) {
+      productData[mappedKey] = row[originalKey];
+    }
+  });
+
+  return productData;
+}
+
+function validateRequiredFields(productData) {
+  REQUIRED_FIELDS.forEach(f => {
+    const val = productData[f.key];
+    if (val === undefined || val === null || String(val).trim() === '') {
+      throw new Error(`필수 필드 [${f.label}]의 값이 비어있거나 유효하지 않습니다.`);
+    }
+  });
+}
+
+function normalizeNumericFields(productData) {
+  NUMERIC_FIELDS.forEach(field => {
+    productData[field] = Number(productData[field]) || 0;
+  });
+}
+
+function applyApiDefaults(productData) {
+  productData.stock = 99;
+  productData.category = productData.mallAttrClassCode || '50001375';
+  productData.description = productData.mallDescription || '<p>상세설명</p>';
+  productData.shippingType = 'FREE';
+  productData.shippingFee = 0;
+  productData.origin = 'DOMESTIC';
+}
+
+function getRowProductName(row, idx) {
+  return row['상품명'] || row['name'] || `행 번호 ${idx + 2}`;
+}
+
+function appendFailure(report, row, idx, err) {
+  report.failures++;
+  report.errors.push({
+    rowIndex: idx + 2, // 1-indexed + header row
+    productName: getRowProductName(row, idx),
+    error: err.message
+  });
+}
+
+function appendSuccess(report, productData) {
+  const insertedProd = db.insertProduct(productData);
+  report.success++;
+  report.inserted.push(insertedProd);
+}
+
+function buildProductData(row) {
+  const productData = mapRowToProductData(row);
+  validateRequiredFields(productData);
+  normalizeNumericFields(productData);
+  applyApiDefaults(productData);
+  return productData;
+}
+
 function parseExcel(filePath) {
   const workbook = XLSX.readFile(filePath);
   const sheetName = workbook.SheetNames[0];
@@ -92,78 +195,13 @@ function parseExcel(filePath) {
   
   // raw 데이터 파싱
   const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-  
-  const report = {
-    total: rows.length,
-    success: 0,
-    failures: 0,
-    errors: [],
-    inserted: []
-  };
+  const report = createUploadReport(rows.length);
 
   rows.forEach((row, idx) => {
     try {
-      const productData = {};
-      
-      // 로우의 각 키를 정규화하여 매핑
-      Object.keys(row).forEach(originalKey => {
-        const cleanKey = originalKey.replace(/\s+/g, '').toLowerCase();
-        const mappedKey = HEADER_MAP[cleanKey] || HEADER_MAP[originalKey];
-        if (mappedKey) {
-          productData[mappedKey] = row[originalKey];
-        }
-      });
-
-      // 필수 데이터 검증 (11개 필수값 체크)
-      const requiredFields = [
-        { key: 'productCode', label: '품번코드' },
-        { key: 'mallCode', label: '쇼핑몰코드' },
-        { key: 'mallName', label: '쇼핑몰명' },
-        { key: 'mallPrice', label: '쇼핑몰 판매가' },
-        { key: 'sellerProductCode', label: '자체상품코드' },
-        { key: 'name', label: '상품명' },
-        { key: 'price', label: '판매가' },
-        { key: 'cost', label: '원가' },
-        { key: 'cost2', label: '원가2' },
-        { key: 'brandName', label: '브랜드명' },
-        { key: 'modelName', label: '모델명' }
-      ];
-
-      requiredFields.forEach(f => {
-        const val = productData[f.key];
-        if (val === undefined || val === null || String(val).trim() === '') {
-          throw new Error(`필수 필드 [${f.label}]의 값이 비어있거나 유효하지 않습니다.`);
-        }
-      });
-
-      // 값 정규화 및 수치 자료형 안전 보장
-      productData.price = Number(productData.price) || 0;
-      productData.cost = Number(productData.cost) || 0;
-      productData.cost2 = Number(productData.cost2) || 0;
-      productData.mallPrice = Number(productData.mallPrice) || 0;
-      productData.mallCost = Number(productData.mallCost) || 0;
-      productData.stockSplitPercent = Number(productData.stockSplitPercent) || 0;
-      productData.productCertSeq = Number(productData.productCertSeq) || 0;
-
-      // 기존 API 호환을 위한 디폴트 세팅 기입
-      productData.stock = 99; // 기본 재고 수량 제공
-      productData.category = productData.mallAttrClassCode || '50001375'; // 속성분류코드가 있으면 카테고리로 매핑
-      productData.description = productData.mallDescription || '<p>상세설명</p>';
-      productData.shippingType = 'FREE';
-      productData.shippingFee = 0;
-      productData.origin = 'DOMESTIC';
-
-      // DB 적재
-      const insertedProd = db.insertProduct(productData);
-      report.success++;
-      report.inserted.push(insertedProd);
+      appendSuccess(report, buildProductData(row));
     } catch (err) {
-      report.failures++;
-      report.errors.push({
-        rowIndex: idx + 2, // 1-indexed + header row
-        productName: row['상품명'] || row['name'] || `행 번호 ${idx + 2}`,
-        error: err.message
-      });
+      appendFailure(report, row, idx, err);
     }
   });
 

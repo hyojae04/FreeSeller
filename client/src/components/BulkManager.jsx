@@ -9,6 +9,48 @@ import {
   RefreshCw
 } from 'lucide-react';
 
+const TEMPLATE_FILE_NAME = 'product_bulk_template.xlsx';
+
+function isExcelFile(file) {
+  return file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+}
+
+function downloadBlob(blob, fileName) {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+async function readUploadError(res, contentType) {
+  if (contentType.includes('application/json')) {
+    const errData = await res.json();
+    return errData.error || '엑셀 업로드 중 오류가 발생했습니다.';
+  }
+
+  const textData = await res.text();
+  return textData || `서버 에러가 발생했습니다. (상태 코드: ${res.status})`;
+}
+
+async function readUploadReport(res) {
+  const contentType = res.headers.get('content-type') || '';
+
+  if (!res.ok) {
+    throw new Error(await readUploadError(res, contentType));
+  }
+
+  if (contentType.includes('application/json')) {
+    return res.json();
+  }
+
+  const textData = await res.text();
+  throw new Error(`올바르지 않은 응답 형식입니다: ${textData.substring(0, 100)}`);
+}
+
 function BulkManager({ onImportSuccess }) {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -37,7 +79,7 @@ function BulkManager({ onImportSuccess }) {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       // 엑셀 확장자 체크 (.xlsx, .xls)
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      if (isExcelFile(file)) {
         setSelectedFile(file);
         setErrorMsg('');
       } else {
@@ -66,14 +108,7 @@ function BulkManager({ onImportSuccess }) {
         throw new Error('템플릿 생성 중 오류가 발생했습니다.');
       }
       const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'product_bulk_template.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      downloadBlob(blob, TEMPLATE_FILE_NAME);
     } catch (err) {
       alert(err.message);
     }
@@ -96,28 +131,9 @@ function BulkManager({ onImportSuccess }) {
         body: formData
       });
 
-      const contentType = res.headers.get('content-type') || '';
-
-      if (!res.ok) {
-        let errMsg = '엑셀 업로드 중 오류가 발생했습니다.';
-        if (contentType.includes('application/json')) {
-          const errData = await res.json();
-          errMsg = errData.error || errMsg;
-        } else {
-          const textData = await res.text();
-          errMsg = textData || `서버 에러가 발생했습니다. (상태 코드: ${res.status})`;
-        }
-        throw new Error(errMsg);
-      }
-
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        setReport(data);
-        setSelectedFile(null); // 초기화
-      } else {
-        const textData = await res.text();
-        throw new Error(`올바르지 않은 응답 형식입니다: ${textData.substring(0, 100)}`);
-      }
+      const data = await readUploadReport(res);
+      setReport(data);
+      setSelectedFile(null); // 초기화
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
