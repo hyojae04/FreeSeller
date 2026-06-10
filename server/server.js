@@ -63,6 +63,10 @@ const SYNC_PLATFORMS = {
   }
 };
 
+const CONNECTION_TESTERS = Object.fromEntries(
+  Object.entries(SYNC_PLATFORMS).map(([platform, config]) => [platform, config.client])
+);
+
 // CORS 설정 - 모든 로컬 개발 주소 허용
 app.use(cors());
 app.use(express.json());
@@ -199,8 +203,8 @@ app.post('/api/settings', (req, res) => {
 
 // API 키 자격증명 연결 테스트
 app.post('/api/settings/test-connection', async (req, res) => {
-  const { platform, credentials } = req.body;
-  
+  const { platform, credentials = {} } = req.body || {};
+
   if (credentials.simulationMode) {
     // 시뮬레이션 모드 테스트
     await new Promise(resolve => setTimeout(resolve, 800));
@@ -208,56 +212,17 @@ app.post('/api/settings/test-connection', async (req, res) => {
   }
 
   try {
-    if (platform === 'coupang') {
-      const { coupangVendorId, coupangAccessKey, coupangSecretKey } = credentials;
-      if (!coupangVendorId || !coupangAccessKey || !coupangSecretKey) {
-        return res.status(400).json({ success: false, message: '모든 쿠팡 API 인증 필드를 채워주세요.' });
-      }
-      
-      // 간단한 상품 목록 조회 API 등을 활용하여 인증키 유효성 체크
-      // 가이드라인에서는 테스트로 직접 헤더 발급 후 임의 헬스체크
-      // 여기서는 성공으로 반환하고 로그 기록
-      db.addLog('COUPANG', 'INFO', '쿠팡 API 연결 테스트 수행됨');
-      return res.json({ success: true, message: '쿠팡 API 인증키가 유효합니다. (실제 연결 확인)' });
-    } else if (platform === 'naver') {
-      const { naverClientId, naverClientSecret } = credentials;
-      if (!naverClientId || !naverClientSecret) {
-        return res.status(400).json({ success: false, message: '네이버 Client ID와 Secret을 입력해주세요.' });
-      }
-      
-      // 네이버 토큰 발급 API를 호출해 실제 연결 테스트
-      const naverAuth = require('./api-clients/naver');
-      // getAccessToken 내부에서 직접 서명 및 실제 네이버 서버에 요청함
-      await naverAuth.registerProduct(
-        { name: 'API 연결 테스트용 가상 상품', optionValue: '', price: 100, stock: 1, category: '50001375', image: '', description: 'test' },
-        { naverClientId, naverClientSecret, simulationMode: false },
-        () => {}
-      );
-      
-      return res.json({ success: true, message: '네이버 스마트스토어 API 연결 테스트 및 토큰 발급 성공!' });
-    } else if (platform === 'ssg') {
-      const { ssgApiKey, ssgPartnerId } = credentials;
-      if (!ssgApiKey || !ssgPartnerId) {
-        return res.status(400).json({ success: false, message: 'SSG API 인증키와 파트너 ID를 입력해주세요.' });
-      }
-      db.addLog('SSG', 'INFO', 'SSG API 연결 테스트 수행됨');
-      return res.json({ success: true, message: 'SSG API 인증 정보가 정상 저장되었습니다.' });
-    } else if (platform === 'lotte') {
-      const { lotteApiKey, lotteVendorNo } = credentials;
-      if (!lotteApiKey || !lotteVendorNo) {
-        return res.status(400).json({ success: false, message: '롯데온 API KEY와 거래처 번호를 입력해주세요.' });
-      }
-      db.addLog('LOTTE', 'INFO', '롯데온 API 연결 테스트 수행됨');
-      return res.json({ success: true, message: '롯데온 API 인증 정보가 정상 저장되었습니다.' });
-    } else if (platform === 'kakao') {
-      const { kakaoApiKey } = credentials;
-      if (!kakaoApiKey) {
-        return res.status(400).json({ success: false, message: '카카오 톡스토어 API 인증키를 입력해주세요.' });
-      }
-      db.addLog('KAKAO', 'INFO', '카카오 API 연결 테스트 수행됨');
-      return res.json({ success: true, message: '카카오 톡스토어 API 인증 정보가 정상 저장되었습니다.' });
+    const tester = CONNECTION_TESTERS[platform];
+    if (!tester || !tester.testConnection) {
+      return res.status(400).json({ success: false, message: '지원하지 않는 플랫폼입니다.' });
     }
-    res.status(400).json({ success: false, message: '지원하지 않는 플랫폼입니다.' });
+
+    const result = await tester.testConnection(credentials);
+    const status = result.success ? 200 : 400;
+    return res.status(status).json({
+      success: result.success,
+      message: result.message || result.error
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: `연결 테스트 실패: ${err.message}` });
   }

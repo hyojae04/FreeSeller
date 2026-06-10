@@ -1,13 +1,14 @@
-const axios = require('axios');
 const db = require('../database');
+const { missingCredentialError, unsupportedLiveError } = require('./live-validation');
 
-const LOTTE_API_HOST = 'https://openapi.lotteon.com'; // 가상 도메인
+const PLATFORM_NAME = '롯데온';
+const CREDENTIAL_FIELDS = ['API Key', '거래처 번호'];
 
 async function registerProduct(product, settings, logCallback = () => {}) {
   const { lotteApiKey, lotteVendorNo, simulationMode } = settings;
   logCallback(`[롯데온] 상품 등록 시작: "${product.name}"`);
 
-  if (simulationMode || !lotteApiKey || !lotteVendorNo) {
+  if (simulationMode) {
     await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 800));
     
     if (product.name.includes('오류') || product.name.includes('fail') || Math.random() < 0.08) {
@@ -23,79 +24,53 @@ async function registerProduct(product, settings, logCallback = () => {}) {
     return { success: true, productId: mockId };
   }
 
-  try {
-    const payload = {
-      vendorNo: lotteVendorNo,
-      spdNm: product.name,
-      sellPrC: product.price,
-      estQty: product.stock,
-      stdCtgNo: product.category || '50001375',
-      spdDesc: product.description,
-      shippingFeeType: product.shippingType === 'FREE' ? 'FREE' : 'PAID',
-      shippingFee: product.shippingType === 'FREE' ? 0 : product.shippingFee
-    };
-
-    db.addLog('LOTTE', 'INFO', `롯데온 API 요청 전송: "${product.name}"`, payload);
-
-    const response = await axios.post(`${LOTTE_API_HOST}/v1/product/register`, payload, {
-      headers: {
-        'Lotteon-Openapi-Key': lotteApiKey,
-        'Content-Type': 'application/json'
-      },
-      timeout: 10000
-    });
-
-    if (response.data && response.data.spdNo) {
-      const spdNo = response.data.spdNo;
-      logCallback(`[롯데온] 상품 등록 성공! 상품 ID: ${spdNo}`, 'SUCCESS');
-      db.addLog('LOTTE', 'SUCCESS', `상품 "${product.name}" 등록 성공`, response.data);
-      return { success: true, productId: spdNo };
-    } else {
-      const errMsg = response.data.message || '롯데온 API 응답 오류';
-      logCallback(`[롯데온] 상품 등록 실패: ${errMsg}`, 'ERROR');
-      return { success: false, error: errMsg };
-    }
-  } catch (err) {
-    const errorMsg = err.response ? JSON.stringify(err.response.data) : err.message;
-    logCallback(`[롯데온] API 호출 오류 발생: ${err.message}`, 'ERROR');
-    db.addLog('LOTTE', 'ERROR', `상품 "${product.name}" 등록 실패`, errorMsg);
-    return { success: false, error: err.message };
+  if (!lotteApiKey || !lotteVendorNo) {
+    const errorMsg = missingCredentialError(PLATFORM_NAME, CREDENTIAL_FIELDS);
+    logCallback(`[롯데온] 상품 등록 차단: ${errorMsg}`, 'ERROR');
+    db.addLog('LOTTE', 'ERROR', `상품 "${product.name}" 등록 차단`, errorMsg);
+    return { success: false, error: errorMsg };
   }
+
+  const errorMsg = unsupportedLiveError(PLATFORM_NAME);
+  logCallback(`[롯데온] 상품 등록 차단: ${errorMsg}`, 'ERROR');
+  db.addLog('LOTTE', 'ERROR', `상품 "${product.name}" 등록 차단`, errorMsg);
+  return { success: false, error: errorMsg };
 }
 
 async function updateProduct(product, settings, logCallback = () => {}) {
-  const { lotteApiKey, simulationMode } = settings;
+  const { lotteApiKey, lotteVendorNo, simulationMode } = settings;
   logCallback(`[롯데온] 상품 수정 시작: "${product.name}" (ID: ${product.statusLotteId})`);
 
-  if (simulationMode || !lotteApiKey) {
+  if (simulationMode) {
     await new Promise(resolve => setTimeout(resolve, 600));
     logCallback(`[롯데온] 상품 수정 성공!`, 'SUCCESS');
     db.addLog('LOTTE', 'SUCCESS', `상품 "${product.name}" 수정 성공(시뮬레이션)`);
     return { success: true };
   }
 
-  try {
-    const payload = {
-      spdNo: product.statusLotteId,
-      spdNm: product.name,
-      sellPrC: product.price,
-      estQty: product.stock
-    };
-
-    const response = await axios.put(`${LOTTE_API_HOST}/v1/product/update`, payload, {
-      headers: { 'Lotteon-Openapi-Key': lotteApiKey }
-    });
-
-    logCallback(`[롯데온] 상품 수정 성공!`, 'SUCCESS');
-    db.addLog('LOTTE', 'SUCCESS', `상품 "${product.name}" 수정 성공`, response.data);
-    return { success: true };
-  } catch (err) {
-    logCallback(`[롯데온] 상품 수정 실패: ${err.message}`, 'ERROR');
-    return { success: false, error: err.message };
+  if (!lotteApiKey || !lotteVendorNo) {
+    const errorMsg = missingCredentialError(PLATFORM_NAME, CREDENTIAL_FIELDS);
+    logCallback(`[롯데온] 상품 수정 차단: ${errorMsg}`, 'ERROR');
+    db.addLog('LOTTE', 'ERROR', `상품 "${product.name}" 수정 차단`, errorMsg);
+    return { success: false, error: errorMsg };
   }
+
+  const errorMsg = unsupportedLiveError(PLATFORM_NAME);
+  logCallback(`[롯데온] 상품 수정 차단: ${errorMsg}`, 'ERROR');
+  db.addLog('LOTTE', 'ERROR', `상품 "${product.name}" 수정 차단`, errorMsg);
+  return { success: false, error: errorMsg };
+}
+
+async function testConnection(settings) {
+  const { lotteApiKey, lotteVendorNo } = settings;
+  if (!lotteApiKey || !lotteVendorNo) {
+    return { success: false, message: missingCredentialError(PLATFORM_NAME, CREDENTIAL_FIELDS) };
+  }
+  return { success: false, message: unsupportedLiveError(PLATFORM_NAME) };
 }
 
 module.exports = {
   registerProduct,
-  updateProduct
+  updateProduct,
+  testConnection
 };

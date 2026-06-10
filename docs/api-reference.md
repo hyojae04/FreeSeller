@@ -155,8 +155,9 @@
 현재 구현 수준:
 
 - simulation mode: 모든 플랫폼이 mock success를 반환합니다.
-- coupang/ssg/lotte/kakao live test: 필수 필드 존재 여부 위주이며 실제 health check는 제한적입니다.
-- naver live test: `registerProduct`를 테스트용 가상 상품으로 호출합니다. 실제 상품 등록 부작용 가능성이 있으므로 개선이 필요합니다.
+- coupang live test: read-only 상품 목록 조회 API로 인증을 확인합니다.
+- naver live test: OAuth token-only 발급으로 인증을 확인합니다.
+- ssg/lotte/kakao live test: 공식 endpoint와 인증 스펙이 프로젝트에 반영되기 전까지 실패로 반환합니다.
 
 ## Logs
 
@@ -263,4 +264,3 @@ SSE 이벤트:
 - `status{Platform}: "ERROR"`
 - `error{Platform}: error message`
 - 일부 catch 경로에서는 `lastSync{Platform}`이 갱신되지 않습니다.
-

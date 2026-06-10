@@ -308,7 +308,7 @@ function App() {
               color: settings.simulationMode ? 'var(--color-warning)' : 'var(--color-success)',
               fontWeight: 'bold'
             }}>
-              {settings.simulationMode ? '시뮬레이션 모드' : '실제 연동 모드'}
+              {settings.simulationMode ? '시뮬레이션 모드' : '실제 API 모드'}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>

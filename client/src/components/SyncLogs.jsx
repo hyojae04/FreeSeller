@@ -48,7 +48,7 @@ function SyncLogs({ logs, onClearLogs }) {
       timestamp: new Date().toISOString(), // 정렬용
       platform: l.platform,
       type: l.type,
-      message: `[LIVE] ${l.message}`,
+      message: `[실시간] ${l.message}`,
       isLive: true
     }));
 
@@ -73,7 +73,7 @@ function SyncLogs({ logs, onClearLogs }) {
     const seenMessages = new Set();
     
     combined.forEach(item => {
-      const uniqueKey = `${item.platform}_${item.type}_${item.message.replace('[LIVE] ', '')}`;
+      const uniqueKey = `${item.platform}_${item.type}_${item.message.replace('[실시간] ', '')}`;
       if (!seenMessages.has(uniqueKey)) {
         seenMessages.add(uniqueKey);
         unique.push(item);

@@ -1,6 +1,11 @@
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const db = require('../database');
+const {
+  buildValidationError,
+  missingCredentialError,
+  validateNaverLiveProduct
+} = require('./live-validation');
 
 const NAVER_API_HOST = 'https://api.commerce.naver.com/external';
 
@@ -63,6 +68,25 @@ async function getAccessToken(clientId, clientSecret) {
   }
 }
 
+async function testConnection(settings) {
+  const { naverClientId, naverClientSecret } = settings;
+
+  if (!naverClientId || !naverClientSecret) {
+    return {
+      success: false,
+      message: missingCredentialError('네이버', ['Client ID', 'Client Secret'])
+    };
+  }
+
+  try {
+    await getAccessToken(naverClientId, naverClientSecret);
+    db.addLog('NAVER', 'INFO', '네이버 token-only API 연결 테스트 성공');
+    return { success: true, message: '네이버 API 연결 테스트 성공: OAuth 토큰 발급 완료' };
+  } catch (err) {
+    return { success: false, message: `네이버 API 연결 테스트 실패: ${err.message}` };
+  }
+}
+
 /**
  * 네이버 스마트스토어 상품 등록 API 호출
  */
@@ -71,8 +95,7 @@ async function registerProduct(product, settings, logCallback = () => {}) {
   
   logCallback(`[네이버] 상품 등록 시작: "${product.name}"`);
 
-  // --- 시뮬레이션 모드 (Mock) ---
-  if (simulationMode || !naverClientId || !naverClientSecret) {
+  if (simulationMode) {
     await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 800));
     
     if (product.name.includes('오류') || product.name.includes('fail') || Math.random() < 0.08) {
@@ -88,6 +111,20 @@ async function registerProduct(product, settings, logCallback = () => {}) {
     return { success: true, productId: mockSellerProductId };
   }
 
+  if (!naverClientId || !naverClientSecret) {
+    const errorMsg = missingCredentialError('네이버', ['Client ID', 'Client Secret']);
+    logCallback(`[네이버] 상품 등록 차단: ${errorMsg}`, 'ERROR');
+    db.addLog('NAVER', 'ERROR', `상품 "${product.name}" 등록 차단`, errorMsg);
+    return { success: false, error: errorMsg };
+  }
+
+  const validationError = buildValidationError('네이버', validateNaverLiveProduct(product, settings));
+  if (validationError) {
+    logCallback(`[네이버] 상품 등록 차단: ${validationError}`, 'ERROR');
+    db.addLog('NAVER', 'ERROR', `상품 "${product.name}" 등록 전 검증 실패`, validationError);
+    return { success: false, error: validationError };
+  }
+
   // --- 실제 API 호출 모드 ---
   try {
     const token = await getAccessToken(naverClientId, naverClientSecret);
@@ -97,10 +134,10 @@ async function registerProduct(product, settings, logCallback = () => {}) {
       originProduct: {
         statusType: 'SALE',
         name: product.name,
-        leafCategoryId: product.category || '50001375', // 카테고리
+        leafCategoryId: String(product.category).trim(),
         images: {
           representativeImage: {
-            url: product.image || 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1'
+            url: product.image
           },
           optionalImages: product.subImages 
             ? product.subImages.split(',').map(url => ({ url: url.trim() }))
@@ -164,11 +201,18 @@ async function updateProduct(product, settings, logCallback = () => {}) {
   const { naverClientId, naverClientSecret, simulationMode } = settings;
   logCallback(`[네이버] 상품 수정 요청: "${product.name}" (ID: ${product.statusNaverId})`);
 
-  if (simulationMode || !naverClientId || !naverClientSecret) {
+  if (simulationMode) {
     await new Promise(resolve => setTimeout(resolve, 600));
     logCallback(`[네이버] 상품 수정 성공!`, 'SUCCESS');
     db.addLog('NAVER', 'SUCCESS', `상품 "${product.name}" 정보 수정 성공(시뮬레이션)`);
     return { success: true };
+  }
+
+  if (!naverClientId || !naverClientSecret) {
+    const errorMsg = missingCredentialError('네이버', ['Client ID', 'Client Secret']);
+    logCallback(`[네이버] 상품 수정 차단: ${errorMsg}`, 'ERROR');
+    db.addLog('NAVER', 'ERROR', `상품 "${product.name}" 수정 차단`, errorMsg);
+    return { success: false, error: errorMsg };
   }
 
   try {
@@ -207,5 +251,6 @@ async function updateProduct(product, settings, logCallback = () => {}) {
 
 module.exports = {
   registerProduct,
-  updateProduct
+  updateProduct,
+  testConnection
 };

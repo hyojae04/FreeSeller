@@ -29,6 +29,7 @@ http://localhost:3000
 - [data-model.md](./data-model.md): JSON DB 구조, 상품 필드, 상태 필드, Excel 매핑
 - [workflows.md](./workflows.md): 상품 등록, Excel 업로드, 대량 편집, 쇼핑몰 연동 흐름
 - [frontend.md](./frontend.md): React 화면 구성, 상태 흐름, 주요 컴포넌트 역할
+- [marketplace-api-readiness.md](./marketplace-api-readiness.md): 실제 마켓 API endpoint, 인증, live mode 안전장치
 - [next-work.md](./next-work.md): 다음 작업 후보, 리스크, 검증 체크리스트
 
 ## 한 줄 요약
@@ -36,4 +37,3 @@ http://localhost:3000
 OpenSabangnet은 로컬 JSON DB에 상품과 설정을 저장하고, React UI에서 상품을 관리한 뒤, Express 서버가 Excel 업로드와 5개 쇼핑몰 연동 작업을 처리하는 local-first 상품 대량 등록 프로그램입니다.
 
 핵심 로직은 `mallCode_productCode` 합성 ID 기반 upsert, Excel 27개 필드 표준화, 필수 11개 필드 검증, 플랫폼별 `SUCCESS`/`ERROR` 상태 보존, SSE 기반 실시간 동기화 로그입니다.
-

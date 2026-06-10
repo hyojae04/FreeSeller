@@ -54,7 +54,8 @@ root
   - `registerProduct(product, settings, logCallback)`
   - `updateProduct(product, settings, logCallback)`
   - simulation mode에서는 mock delay와 mock result 반환
-  - live mode에서는 플랫폼별 API 호출 시도
+  - live mode에서는 인증 누락과 상품 필수값을 먼저 차단
+  - SSG/롯데온/카카오는 공식 스펙 기반 구현 전까지 live 호출 차단
 
 ### 클라이언트
 
@@ -110,4 +111,3 @@ root
 5. Simulation-first
    - 기본 설정은 `simulationMode: true`입니다.
    - 실제 API credential이 없어도 UI, Excel 업로드, 동기화 흐름을 테스트할 수 있습니다.
-

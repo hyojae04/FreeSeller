@@ -1,6 +1,11 @@
 const crypto = require('crypto');
 const axios = require('axios');
 const db = require('../database');
+const {
+  buildValidationError,
+  missingCredentialError,
+  validateCoupangLiveProduct
+} = require('./live-validation');
 
 const COUPANG_HOST = 'https://api-gateway.coupang.com';
 
@@ -26,6 +31,43 @@ function generateCoupangHeaders(method, path, query = '', accessKey, secretKey) 
   };
 }
 
+function formatCoupangDate(date) {
+  return date.toISOString().substring(0, 19);
+}
+
+async function testConnection(settings) {
+  const { coupangVendorId, coupangAccessKey, coupangSecretKey } = settings;
+
+  if (!coupangVendorId || !coupangAccessKey || !coupangSecretKey) {
+    return {
+      success: false,
+      message: missingCredentialError('쿠팡', ['Vendor ID', 'Access Key', 'Secret Key'])
+    };
+  }
+
+  const path = '/v2/providers/seller_api/apis/api/v1/marketplace/seller-products/time-frame';
+  const createdAtTo = formatCoupangDate(new Date());
+  const createdAtFrom = formatCoupangDate(new Date(Date.now() - 5 * 60 * 1000));
+  const params = new URLSearchParams({
+    vendorId: coupangVendorId,
+    createdAtFrom,
+    createdAtTo
+  });
+  const query = params.toString();
+  const headers = generateCoupangHeaders('GET', path, query, coupangAccessKey, coupangSecretKey);
+
+  try {
+    await axios.get(`${COUPANG_HOST}${path}?${query}`, { headers, timeout: 10000 });
+    db.addLog('COUPANG', 'INFO', '쿠팡 read-only 상품 목록 조회로 API 연결 테스트 성공');
+    return { success: true, message: '쿠팡 API 연결 테스트 성공: read-only 상품 목록 조회 인증 완료' };
+  } catch (err) {
+    const errorDetails = err.response ? err.response.data : err.message;
+    const message = errorDetails.message || errorDetails.error || err.message;
+    db.addLog('COUPANG', 'ERROR', '쿠팡 API 연결 테스트 실패', errorDetails);
+    return { success: false, message: `쿠팡 API 연결 테스트 실패: ${message}` };
+  }
+}
+
 /**
  * 쿠팡 상품 등록 API 호출
  */
@@ -35,8 +77,7 @@ async function registerProduct(product, settings, logCallback = () => {}) {
   
   logCallback(`[쿠팡] 상품 등록 시작: "${product.name}"`);
 
-  // --- 시뮬레이션 모드 (Mock) ---
-  if (simulationMode || !coupangAccessKey || !coupangSecretKey || !coupangVendorId) {
+  if (simulationMode) {
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
     
     // 특정 키워드에 따라 고의로 오류를 내어 오류 처리 UI 검증을 돕습니다.
@@ -51,6 +92,20 @@ async function registerProduct(product, settings, logCallback = () => {}) {
     logCallback(`[쿠팡] 상품 등록 성공! 상품ID: ${mockSellerProductId}`, 'SUCCESS');
     db.addLog('COUPANG', 'SUCCESS', `상품 "${product.name}" 등록 성공`, { sellerProductId: mockSellerProductId, status: 'APPROVED' });
     return { success: true, productId: mockSellerProductId };
+  }
+
+  if (!coupangAccessKey || !coupangSecretKey || !coupangVendorId) {
+    const errorMsg = missingCredentialError('쿠팡', ['Vendor ID', 'Access Key', 'Secret Key']);
+    logCallback(`[쿠팡] 상품 등록 차단: ${errorMsg}`, 'ERROR');
+    db.addLog('COUPANG', 'ERROR', `상품 "${product.name}" 등록 차단`, errorMsg);
+    return { success: false, error: errorMsg };
+  }
+
+  const validationError = buildValidationError('쿠팡', validateCoupangLiveProduct(product, settings));
+  if (validationError) {
+    logCallback(`[쿠팡] 상품 등록 차단: ${validationError}`, 'ERROR');
+    db.addLog('COUPANG', 'ERROR', `상품 "${product.name}" 등록 전 검증 실패`, validationError);
+    return { success: false, error: validationError };
   }
 
   // --- 실제 API 호출 모드 ---
@@ -70,7 +125,7 @@ async function registerProduct(product, settings, logCallback = () => {}) {
           {
             imageOrder: 0,
             imageType: 'REPRESENTATION',
-            vendorPath: product.image || 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1'
+            vendorPath: product.image
           }
         ],
         attributes: [],
@@ -80,12 +135,12 @@ async function registerProduct(product, settings, logCallback = () => {}) {
     });
 
     const payload = {
-      displayCategoryCode: Number(product.category) || 50001375, // 가본 카테고리
+      displayCategoryCode: Number(product.category),
       sellerProductName: product.name,
       vendorId: coupangVendorId,
       saleStartedAt: new Date().toISOString().substring(0, 19).replace('T', ' '),
       saleEndedAt: '2099-12-31 23:59:59',
-      brand: product.brand || '자체제작',
+      brand: product.brandName || product.brand,
       generalDescription: product.description,
       items: items,
       deliveryProperties: {
@@ -125,14 +180,21 @@ async function registerProduct(product, settings, logCallback = () => {}) {
  * 쿠팡 상품 정보 수정 API 호출 (등록 상품 가격/재고 등 변경)
  */
 async function updateProduct(product, settings, logCallback = () => {}) {
-  const { coupangAccessKey, coupangSecretKey, simulationMode } = settings;
+  const { coupangAccessKey, coupangSecretKey, coupangVendorId, simulationMode } = settings;
   logCallback(`[쿠팡] 상품 수정 요청: "${product.name}" (ID: ${product.statusCoupangId})`);
 
-  if (simulationMode || !coupangAccessKey || !coupangSecretKey) {
+  if (simulationMode) {
     await new Promise(resolve => setTimeout(resolve, 800));
     logCallback(`[쿠팡] 상품 수정 성공!`, 'SUCCESS');
     db.addLog('COUPANG', 'SUCCESS', `상품 "${product.name}" 정보 수정 성공(시뮬레이션)`);
     return { success: true };
+  }
+
+  if (!coupangAccessKey || !coupangSecretKey || !coupangVendorId) {
+    const errorMsg = missingCredentialError('쿠팡', ['Vendor ID', 'Access Key', 'Secret Key']);
+    logCallback(`[쿠팡] 상품 수정 차단: ${errorMsg}`, 'ERROR');
+    db.addLog('COUPANG', 'ERROR', `상품 "${product.name}" 수정 차단`, errorMsg);
+    return { success: false, error: errorMsg };
   }
 
   // 실제 연동은 상품 아이템(vendorItemId) 단위 가격 변경 API 등을 사용해야 합니다.
@@ -166,5 +228,6 @@ async function updateProduct(product, settings, logCallback = () => {}) {
 
 module.exports = {
   registerProduct,
-  updateProduct
+  updateProduct,
+  testConnection
 };

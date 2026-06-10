@@ -124,7 +124,7 @@ SSE 이벤트 처리:
 주의:
 
 - UI 안내에는 안전 저장처럼 보이는 문구가 있지만 실제 DB 저장은 평문입니다.
-- 네이버 connection test는 실제 `registerProduct` 경로를 호출합니다. live mode에서는 테스트 상품 등록 부작용이 생길 수 있어 별도 token-only test로 바꾸는 것이 좋습니다.
+- connection test는 상품 등록 API를 호출하지 않고 token-only/read-only API로만 인증 상태를 확인합니다.
 
 ## SyncLogs.jsx
 
@@ -155,4 +155,3 @@ SSE 이벤트 처리:
 - `.console-container`
 
 색상 theme은 dark UI이며 플랫폼 색상은 Naver/Coupang만 CSS variable로 정의되어 있고, SSG/Lotte/Kakao는 컴포넌트 inline color를 주로 씁니다.
-
